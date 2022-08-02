@@ -117,14 +117,13 @@ class sfp_bitcoinabuse(SpiderFootPlugin):
             rec = self.query(eventData)
             if isinstance(rec, dict):
                 count = rec.get("count")
-                if isinstance(count, int):
-                    if count > 0:
-                        evt = SpiderFootEvent(
-                            "MALICIOUS_BITCOIN_ADDRESS", f"BitcoinAbuse [{rec['address']}][https://www.bitcoinabuse.com/reports/{rec['address']}]", self.__name__, event
-                        )
-                        self.notifyListeners(evt)
+                if isinstance(count, int) and count > 0:
+                    evt = SpiderFootEvent(
+                        "MALICIOUS_BITCOIN_ADDRESS", f"BitcoinAbuse [{rec['address']}][https://www.bitcoinabuse.com/reports/{rec['address']}]", self.__name__, event
+                    )
+                    self.notifyListeners(evt)
 
-                        rirevt = SpiderFootEvent(
-                            "RAW_RIR_DATA", json.dumps(rec), self.__name__, event
-                        )
-                        self.notifyListeners(rirevt)
+                    rirevt = SpiderFootEvent(
+                        "RAW_RIR_DATA", json.dumps(rec), self.__name__, event
+                    )
+                    self.notifyListeners(rirevt)

@@ -71,8 +71,7 @@ class sfp_cookie(SpiderFootPlugin):
             self.error("Received HTTP headers from another module in an unexpected format.")
             return
 
-        cookie = data.get('cookie')
-        if cookie:
+        if cookie := data.get('cookie'):
             evt = SpiderFootEvent("TARGET_WEB_COOKIE", cookie, self.__name__, event)
             self.notifyListeners(evt)
 

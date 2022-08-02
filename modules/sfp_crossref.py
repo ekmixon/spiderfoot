@@ -69,7 +69,7 @@ class sfp_crossref(SpiderFootPlugin):
         # SIMILARDOMAIN and CO_HOSTED_SITE events are domains, not URLs.
         # Assume HTTP.
         if eventName in ['SIMILARDOMAIN', 'CO_HOSTED_SITE']:
-            url = 'http://' + eventData.lower()
+            url = f'http://{eventData.lower()}'
         elif 'URL' in eventName:
             url = eventData
         else:
@@ -119,36 +119,37 @@ class sfp_crossref(SpiderFootPlugin):
                 matched = True
                 break
 
-        if not matched:
-            # If the name wasn't found in the affiliate, and checkbase is set,
-            # fetch the base URL of the affiliate to check for a crossref.
-            if eventName == "LINKED_URL_EXTERNAL" and self.opts['checkbase']:
-                # Check the base url to see if there is an affiliation
-                url = self.sf.urlBaseUrl(eventData)
-                if url in self.fetched:
-                    return
+        if (
+            not matched
+            and eventName == "LINKED_URL_EXTERNAL"
+            and self.opts['checkbase']
+        ):
+            # Check the base url to see if there is an affiliation
+            url = self.sf.urlBaseUrl(eventData)
+            if url in self.fetched:
+                return
 
-                self.fetched[url] = True
+            self.fetched[url] = True
 
-                res = self.sf.fetchUrl(
-                    url,
-                    timeout=self.opts['_fetchtimeout'],
-                    useragent=self.opts['_useragent'],
-                    sizeLimit=10000000,
-                    verify=False
-                )
+            res = self.sf.fetchUrl(
+                url,
+                timeout=self.opts['_fetchtimeout'],
+                useragent=self.opts['_useragent'],
+                sizeLimit=10000000,
+                verify=False
+            )
 
-                if res['content'] is not None:
-                    for name in self.getTarget().getNames():
-                        pat = re.compile(
-                            r"([\.\'\/\"\ ]" + re.escape(name) + r"[\'\/\"\ ])",
-                            re.IGNORECASE
-                        )
-                        matches = re.findall(pat, str(res['content']))
+            if res['content'] is not None:
+                for name in self.getTarget().getNames():
+                    pat = re.compile(
+                        r"([\.\'\/\"\ ]" + re.escape(name) + r"[\'\/\"\ ])",
+                        re.IGNORECASE
+                    )
+                    matches = re.findall(pat, str(res['content']))
 
-                        if len(matches) > 0:
-                            matched = True
-                            break
+                    if len(matches) > 0:
+                        matched = True
+                        break
 
         if not matched:
             return

@@ -63,10 +63,7 @@ class sfp_creditcard(SpiderFootPlugin):
         for creditCard in set(creditCards):
             self.info(f"Found credit card number: {creditCard}")
             evt = SpiderFootEvent("CREDIT_CARD_NUMBER", creditCard, self.__name__, event)
-            if event.moduleDataSource:
-                evt.moduleDataSource = event.moduleDataSource
-            else:
-                evt.moduleDataSource = "Unknown"
+            evt.moduleDataSource = event.moduleDataSource or "Unknown"
             self.notifyListeners(evt)
 
 # End of sfp_creditcard class

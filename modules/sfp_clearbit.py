@@ -89,7 +89,7 @@ class sfp_clearbit(SpiderFootPlugin):
         api_key = self.opts['api_key']
         if type(api_key) == str:
             api_key = api_key.encode('utf-8')
-        url = "https://person.clearbit.com/v2/combined/find?email=" + t
+        url = f"https://person.clearbit.com/v2/combined/find?email={t}"
         token = base64.b64encode(api_key + ':'.encode('utf-8'))
         headers = {
             'Accept': 'application/json',
@@ -139,13 +139,16 @@ class sfp_clearbit(SpiderFootPlugin):
             # Get the name associated with the e-mail
             if "person" in data:
                 name = data['person']['name']['fullName']
-                evt = SpiderFootEvent("RAW_RIR_DATA", "Possible full name: " + name,
-                                      self.__name__, event)
+                evt = SpiderFootEvent(
+                    "RAW_RIR_DATA",
+                    f"Possible full name: {name}",
+                    self.__name__,
+                    event,
+                )
+
                 self.notifyListeners(evt)
         except Exception:
             self.debug("Unable to extract name from JSON.")
-            pass
-
         # Get the location of the person, also indicating
         # the location of the employer.
         try:
@@ -168,8 +171,6 @@ class sfp_clearbit(SpiderFootPlugin):
                 self.notifyListeners(evt)
         except Exception:
             self.debug("Unable to extract location from JSON.")
-            pass
-
         try:
             if "company" in data:
                 if 'domainAliases' in data['company']:
@@ -213,6 +214,5 @@ class sfp_clearbit(SpiderFootPlugin):
                     self.notifyListeners(evt)
         except Exception:
             self.debug("Unable to company info from JSON.")
-            pass
 
 # End of sfp_clearbit class

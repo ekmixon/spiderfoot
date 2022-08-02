@@ -126,7 +126,7 @@ class sfp_coinblocker(SpiderFootPlugin):
         Returns:
             list: list of blocked host names
         """
-        hosts = list()
+        hosts = []
 
         if not blocklist:
             return hosts
@@ -136,13 +136,8 @@ class sfp_coinblocker(SpiderFootPlugin):
                 continue
             if line.startswith('#'):
                 continue
-            host = line.strip()
-            # Note: Validation with sf.validHost() is too slow to use here
-            # if not self.sf.validHost(host, self.opts['_internettlds']):
-            #    continue
-            if not host:
-                continue
-            hosts.append(host.lower())
+            if host := line.strip():
+                hosts.append(host.lower())
 
         return hosts
 

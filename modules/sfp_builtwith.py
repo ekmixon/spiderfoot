@@ -154,15 +154,16 @@ class sfp_builtwith(SpiderFootPlugin):
                         e = SpiderFootEvent("RAW_RIR_DATA", "Possible full name: " + nb['Name'],
                                             self.__name__, event)
                         self.notifyListeners(e)
-                        if nb.get('Email', None):
-                            if self.sf.validEmail(nb['Email']):
-                                if nb['Email'].split("@")[0] in self.opts['_genericusers'].split(","):
-                                    evttype = "EMAILADDR_GENERIC"
-                                else:
-                                    evttype = "EMAILADDR"
-                                e = SpiderFootEvent(evttype, nb['Email'],
-                                                    self.__name__, event)
-                                self.notifyListeners(e)
+                        if nb.get('Email', None) and self.sf.validEmail(
+                            nb['Email']
+                        ):
+                            if nb['Email'].split("@")[0] in self.opts['_genericusers'].split(","):
+                                evttype = "EMAILADDR_GENERIC"
+                            else:
+                                evttype = "EMAILADDR"
+                            e = SpiderFootEvent(evttype, nb['Email'],
+                                                self.__name__, event)
+                            self.notifyListeners(e)
 
                 if data['Meta'].get("Emails", []):
                     for email in data['Meta']['Emails']:
@@ -197,10 +198,7 @@ class sfp_builtwith(SpiderFootPlugin):
                     # If we have a subdomain, let's get its tech info
                     # and associate it with the subdomain event.
                     for t in p.get("Technologies", []):
-                        if ev:
-                            src = ev
-                        else:
-                            src = event
+                        src = ev or event
                         agelimit = int(time.time() * 1000) - (86400000 * self.opts['maxage'])
                         if t.get("LastDetected", 0) < agelimit:
                             self.debug("Data found too old, skipping.")
@@ -241,11 +239,7 @@ class sfp_builtwith(SpiderFootPlugin):
                         evttype = "IP_ADDRESS"
                     else:
                         val = i['Value'].strip(".")
-                        if self.getTarget.matches(val):
-                            evttype = "INTERNET_NAME"
-                        else:
-                            evttype = "CO_HOSTED_SITE"
-
+                        evttype = "INTERNET_NAME" if self.getTarget.matches(val) else "CO_HOSTED_SITE"
                     # Create the name/co-host
                     e = SpiderFootEvent(evttype, val, self.__name__, event)
                     self.notifyListeners(e)

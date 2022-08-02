@@ -59,14 +59,14 @@ class sfp_commoncrawl(SpiderFootPlugin):
     def setup(self, sfc, userOpts=dict()):
         self.sf = sfc
         self.results = self.tempStorage()
-        self.indexBase = list()
+        self.indexBase = []
         self.errorState = False
 
         for opt in list(userOpts.keys()):
             self.opts[opt] = userOpts[opt]
 
     def search(self, target):
-        ret = list()
+        ret = []
         for index in self.indexBase:
             url = f"https://index.commoncrawl.org/{index}-index?url={target}/*&output=json"
             res = self.sf.fetchUrl(url, timeout=60,
@@ -94,30 +94,31 @@ class sfp_commoncrawl(SpiderFootPlugin):
         if res['code'] in ["400", "401", "402", "403", "404"]:
             self.error("CommonCrawl index collection doesn't seem to be available.")
             self.errorState = True
-            return list()
+            return []
 
         if not res['content']:
             self.error("CommonCrawl index collection doesn't seem to be available.")
             self.errorState = True
-            return list()
+            return []
 
         indexes = re.findall(r".*(CC-MAIN-\d+-\d+).*", str(res['content']))
-        indexlist = dict()
+        indexlist = {}
         for m in indexes:
             ms = m.replace("CC-MAIN-", "").replace("-", "")
             indexlist[ms] = True
 
-        topindexes = sorted(list(indexlist.keys()), reverse=True)[0:self.opts['indexes']]
+        topindexes = sorted(list(indexlist.keys()), reverse=True)[
+            : self.opts['indexes']
+        ]
+
 
         if len(topindexes) < self.opts['indexes']:
             self.error("Not able to find latest CommonCrawl indexes.")
             self.errorState = True
-            return list()
+            return []
 
-        retindex = list()
-        for i in topindexes:
-            retindex.append("CC-MAIN-" + str(i)[0:4] + "-" + str(i)[4:6])
-        self.debug("CommonCrawl indexes: " + str(retindex))
+        retindex = ["CC-MAIN-" + str(i)[:4] + "-" + str(i)[4:6] for i in topindexes]
+        self.debug(f"CommonCrawl indexes: {retindex}")
         return retindex
 
     # What events is this module interested in for input
@@ -162,7 +163,7 @@ class sfp_commoncrawl(SpiderFootPlugin):
             self.error("Unable to obtain content from CommonCrawl.")
             return
 
-        sent = list()
+        sent = []
         for content in data:
             try:
                 for line in content.split("\n"):
@@ -176,7 +177,7 @@ class sfp_commoncrawl(SpiderFootPlugin):
                         continue
 
                     # CommonCrawl sometimes returns hosts with a trailing . after the domain
-                    link['url'] = link['url'].replace(eventData + ".", eventData)
+                    link['url'] = link['url'].replace(f"{eventData}.", eventData)
 
                     if link['url'] in sent:
                         continue
@@ -186,7 +187,7 @@ class sfp_commoncrawl(SpiderFootPlugin):
                                           self.__name__, event)
                     self.notifyListeners(evt)
             except Exception as e:
-                self.error("Malformed JSON from CommonCrawl.org: " + str(e))
+                self.error(f"Malformed JSON from CommonCrawl.org: {str(e)}")
                 return
 
 # End of sfp_commoncrawl class

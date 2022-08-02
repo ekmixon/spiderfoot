@@ -119,11 +119,7 @@ def main():
     if args.max_threads:
         sfConfig['_maxthreads'] = args.max_threads
 
-    if args.debug:
-        sfConfig['_debug'] = True
-    else:
-        sfConfig['_debug'] = False
-
+    sfConfig['_debug'] = bool(args.debug)
     if args.q:
         sfConfig['__logging'] = False
 
@@ -132,11 +128,11 @@ def main():
     logWorkerSetup(loggingQueue)
     log = logging.getLogger(f"spiderfoot.{__name__}")
 
-    sfModules = dict()
+    sfModules = {}
     sft = SpiderFoot(sfConfig)
 
     # Load each module in the modules directory with a .py extension
-    mod_dir = sft.myPath() + '/modules/'
+    mod_dir = f'{sft.myPath()}/modules/'
 
     if not os.path.isdir(mod_dir):
         log.critical(f"Modules directory does not exist: {mod_dir}")
@@ -153,9 +149,9 @@ def main():
         modName = filename.split('.')[0]
 
         # Load and instantiate the module
-        sfModules[modName] = dict()
+        sfModules[modName] = {}
         try:
-            mod = __import__('modules.' + modName, globals(), locals(), [modName])
+            mod = __import__(f'modules.{modName}', globals(), locals(), [modName])
             sfModules[modName]['object'] = getattr(mod, modName)()
             mod_dict = sfModules[modName]['object'].asdict()
             sfModules[modName].update(mod_dict)
@@ -184,10 +180,7 @@ def main():
         dbh = SpiderFootDb(sfConfig, init=True)
         log.info("Types available:")
         typedata = dbh.eventTypes()
-        types = dict()
-        for r in typedata:
-            types[r[1]] = r[0]
-
+        types = {r[1]: r[0] for r in typedata}
         for t in sorted(types.keys()):
             print(('{0:45}  {1}'.format(t, types[t])))
         sys.exit(0)

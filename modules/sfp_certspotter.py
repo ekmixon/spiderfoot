@@ -161,14 +161,8 @@ class sfp_certspotter(SpiderFootPlugin):
         max_pages = int(self.opts['max_pages'])
         page = 1
         last_id = None
-        hosts = list()
-        while page <= max_pages:
-            if self.checkForStop():
-                break
-
-            if self.errorState:
-                break
-
+        hosts = []
+        while page <= max_pages and not self.checkForStop() and not self.errorState:
             data = self.queryIssuances(eventData, last_id)
 
             if data is None or len(data) == 0:
@@ -180,13 +174,8 @@ class sfp_certspotter(SpiderFootPlugin):
             self.notifyListeners(evt)
 
             for result in data:
-                cert_hosts = result.get('dns_names')
-
-                if cert_hosts:
-                    for d in cert_hosts:
-                        if d != eventData:
-                            hosts.append(d.replace("*.", ""))
-
+                if cert_hosts := result.get('dns_names'):
+                    hosts.extend(d.replace("*.", "") for d in cert_hosts if d != eventData)
                 if result.get('cert') is None:
                     self.debug('Response data contains no certificate data')
                     continue
@@ -215,9 +204,7 @@ class sfp_certspotter(SpiderFootPlugin):
                     evt = SpiderFootEvent('SSL_CERTIFICATE_ISSUED', cert['issued'], self.__name__, event)
                     self.notifyListeners(evt)
 
-                for san in set(cert.get('altnames', list())):
-                    hosts.append(san.replace("*.", ""))
-
+                hosts.extend(san.replace("*.", "") for san in set(cert.get('altnames', [])))
                 if cert.get('expired'):
                     evt = SpiderFootEvent("SSL_CERTIFICATE_EXPIRED", cert.get('expirystr', 'Unknown'), self.__name__, event)
                     self.notifyListeners(evt)
@@ -226,8 +213,6 @@ class sfp_certspotter(SpiderFootPlugin):
                 if cert.get('expiring'):
                     evt = SpiderFootEvent("SSL_CERTIFICATE_EXPIRING", cert.get('expirystr', 'Unknown'), self.__name__, event)
                     self.notifyListeners(evt)
-                    continue
-
             # "To retrieve additional issuances, take the id field of the last issuance and pass it to the issuances endpoint in the after parameter"
             last_id = data[-1].get('id')
 
@@ -261,9 +246,9 @@ class sfp_certspotter(SpiderFootPlugin):
             if self.sf.isDomain(domain, self.opts['_internettlds']):
                 if evt_type == 'CO_HOSTED_SITE':
                     evt = SpiderFootEvent('CO_HOSTED_SITE_DOMAIN', domain, self.__name__, event)
-                    self.notifyListeners(evt)
                 else:
                     evt = SpiderFootEvent('DOMAIN_NAME', domain, self.__name__, event)
-                    self.notifyListeners(evt)
+
+                self.notifyListeners(evt)
 
 # End of sfp_certspotter class

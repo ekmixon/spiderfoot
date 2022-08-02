@@ -101,14 +101,13 @@ class sfp_company(SpiderFootPlugin):
         # Find chunks of text containing what might be a company name first.
         # This is to avoid running very expensive regexps on large chunks of
         # data.
-        chunks = list()
+        chunks = []
         for pat in pattern_match:
             start = 0
             m = eventData.find(pat, start)
             while m > 0:
                 start = m - 50
-                if start < 0:
-                    start = 0
+                start = max(start, 0)
                 end = m + 10
                 if end >= len(eventData):
                     end = len(eventData) - 1
@@ -116,15 +115,17 @@ class sfp_company(SpiderFootPlugin):
                 offset = m + len(pat)
                 m = eventData.find(pat, offset)
 
-        myres = list()
+        myres = []
         for chunk in chunks:
             for pat in pattern_match_re:
-                matches = re.findall(pattern_prefix + "(" + pat + ")" + pattern_suffix, chunk, re.MULTILINE | re.DOTALL)
+                matches = re.findall(
+                    f"{pattern_prefix}({pat}){pattern_suffix}",
+                    chunk,
+                    re.MULTILINE | re.DOTALL,
+                )
+
                 for match in matches:
-                    matched = 0
-                    for m in match:
-                        if len(m) > 0:
-                            matched += 1
+                    matched = sum(len(m) > 0 for m in match)
                     if matched <= 1:
                         continue
 
@@ -135,11 +136,11 @@ class sfp_company(SpiderFootPlugin):
                             if re.match(f, m):
                                 flt = True
                         if not flt:
-                            fullcompany += m + " "
+                            fullcompany += f"{m} "
 
                     fullcompany = re.sub(r"\s+", " ", fullcompany.strip())
 
-                    self.info("Found company name: " + fullcompany)
+                    self.info(f"Found company name: {fullcompany}")
 
                     if fullcompany in myres:
                         self.debug("Already found from this source.")
@@ -153,10 +154,7 @@ class sfp_company(SpiderFootPlugin):
                         etype = "COMPANY_NAME"
 
                     evt = SpiderFootEvent(etype, fullcompany, self.__name__, event)
-                    if event.moduleDataSource:
-                        evt.moduleDataSource = event.moduleDataSource
-                    else:
-                        evt.moduleDataSource = "Unknown"
+                    evt.moduleDataSource = event.moduleDataSource or "Unknown"
                     self.notifyListeners(evt)
 
 # End of sfp_company class

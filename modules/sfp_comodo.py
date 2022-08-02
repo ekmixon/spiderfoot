@@ -85,9 +85,7 @@ class sfp_comodo(SpiderFootPlugin):
             self.debug(f"Unable to resolve {qaddr}")
             return False
 
-        if addrs:
-            return True
-        return False
+        return bool(addrs)
 
     def handleEvent(self, event):
         eventName = event.eventType
@@ -117,10 +115,7 @@ class sfp_comodo(SpiderFootPlugin):
         if not self.sf.resolveHost(eventData) and not self.sf.resolveHost6(eventData):
             return
 
-        found = self.query(eventData)
-
-        # Host was found, not blocked
-        if found:
+        if found := self.query(eventData):
             return
 
         evt = SpiderFootEvent(blacklist_type, f"Comodo Secure DNS [{eventData}]", self.__name__, event)

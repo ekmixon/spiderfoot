@@ -69,7 +69,7 @@ class SpiderFoot:
             TypeError: options argument was invalid type
         """
         if not isinstance(options, dict):
-            raise TypeError("options is %s; expected dict()" % type(options))
+            raise TypeError(f"options is {type(options)}; expected dict()")
 
         self.opts = deepcopy(options)
         self.log = logging.getLogger(f"spiderfoot.{__name__}")
@@ -202,7 +202,7 @@ class SpiderFoot:
         """
         self.log.critical(error, extra={'scanId': self._scanId})
 
-        print(str(inspect.stack()))
+        print(inspect.stack())
 
         sys.exit(-1)
 
@@ -264,8 +264,6 @@ class SpiderFoot:
             str: SHA256 hash
         """
         s = string
-        if type(string) in [list, dict]:
-            s = str(string)
         return hashlib.sha256(s.encode('raw_unicode_escape')).hexdigest()
 
     def cachePut(self, label: str, data: str) -> None:
@@ -276,7 +274,7 @@ class SpiderFoot:
             data (str): Data to cache
         """
         pathLabel = hashlib.sha224(label.encode('utf-8')).hexdigest()
-        cacheFile = SpiderFootHelpers.cachePath() + "/" + pathLabel
+        cacheFile = f"{SpiderFootHelpers.cachePath()}/{pathLabel}"
         with io.open(cacheFile, "w", encoding="utf-8", errors="ignore") as fp:
             if isinstance(data, list):
                 for line in data:
@@ -305,7 +303,7 @@ class SpiderFoot:
             return None
 
         pathLabel = hashlib.sha224(label.encode('utf-8')).hexdigest()
-        cacheFile = SpiderFootHelpers.cachePath() + "/" + pathLabel
+        cacheFile = f"{SpiderFootHelpers.cachePath()}/{pathLabel}"
         try:
             (m, i, d, n, u, g, sz, atime, mtime, ctime) = os.stat(cacheFile)
 
@@ -334,9 +332,9 @@ class SpiderFoot:
             TypeError: arg type was invalid
         """
         if not isinstance(opts, dict):
-            raise TypeError("opts is %s; expected dict()" % type(opts))
+            raise TypeError(f"opts is {type(opts)}; expected dict()")
 
-        storeopts = dict()
+        storeopts = {}
 
         if not opts:
             return storeopts
@@ -350,10 +348,7 @@ class SpiderFoot:
                 storeopts[opt] = opts[opt]
 
             if isinstance(opts[opt], bool):
-                if opts[opt]:
-                    storeopts[opt] = 1
-                else:
-                    storeopts[opt] = 0
+                storeopts[opt] = 1 if opts[opt] else 0
             if isinstance(opts[opt], list):
                 storeopts[opt] = ','.join(opts[opt])
 
@@ -375,10 +370,7 @@ class SpiderFoot:
                     storeopts[mod_opt] = mod_opt_val
 
                 if isinstance(mod_opt_val, bool):
-                    if mod_opt_val:
-                        storeopts[mod_opt] = 1
-                    else:
-                        storeopts[mod_opt] = 0
+                    storeopts[mod_opt] = 1 if mod_opt_val else 0
                 if isinstance(mod_opt_val, list):
                     storeopts[mod_opt] = ','.join(str(x) for x in mod_opt_val)
 
@@ -401,9 +393,9 @@ class SpiderFoot:
         """
 
         if not isinstance(opts, dict):
-            raise TypeError("opts is %s; expected dict()" % type(opts))
+            raise TypeError(f"opts is {type(opts)}; expected dict()")
         if not isinstance(referencePoint, dict):
-            raise TypeError("referencePoint is %s; expected dict()" % type(referencePoint))
+            raise TypeError(f"referencePoint is {type(referencePoint)}; expected dict()")
 
         returnOpts = referencePoint
 
@@ -417,10 +409,7 @@ class SpiderFoot:
                 continue
 
             if isinstance(referencePoint[opt], bool):
-                if opts[opt] == "1":
-                    returnOpts[opt] = True
-                else:
-                    returnOpts[opt] = False
+                returnOpts[opt] = opts[opt] == "1"
                 continue
 
             if isinstance(referencePoint[opt], str):
@@ -433,9 +422,7 @@ class SpiderFoot:
 
             if isinstance(referencePoint[opt], list):
                 if isinstance(referencePoint[opt][0], int):
-                    returnOpts[opt] = list()
-                    for x in str(opts[opt]).split(","):
-                        returnOpts[opt].append(int(x))
+                    returnOpts[opt] = [int(x) for x in str(opts[opt]).split(",")]
                 else:
                     returnOpts[opt] = str(opts[opt]).split(",")
 
@@ -452,30 +439,33 @@ class SpiderFoot:
                 if opt.startswith('_') and filterSystem:
                     continue
 
-                if modName + ":" + opt in opts:
+                if f"{modName}:{opt}" in opts:
                     ref_mod = referencePoint['__modules__'][modName]['opts'][opt]
                     if isinstance(ref_mod, bool):
-                        if opts[modName + ":" + opt] == "1":
-                            returnOpts['__modules__'][modName]['opts'][opt] = True
-                        else:
-                            returnOpts['__modules__'][modName]['opts'][opt] = False
+                        returnOpts['__modules__'][modName]['opts'][opt] = (
+                            opts[f"{modName}:{opt}"] == "1"
+                        )
+
                         continue
 
                     if isinstance(ref_mod, str):
-                        returnOpts['__modules__'][modName]['opts'][opt] = str(opts[modName + ":" + opt])
+                        returnOpts['__modules__'][modName]['opts'][opt] = str(opts[f"{modName}:{opt}"])
                         continue
 
                     if isinstance(ref_mod, int):
-                        returnOpts['__modules__'][modName]['opts'][opt] = int(opts[modName + ":" + opt])
+                        returnOpts['__modules__'][modName]['opts'][opt] = int(opts[f"{modName}:{opt}"])
                         continue
 
                     if isinstance(ref_mod, list):
                         if isinstance(ref_mod[0], int):
-                            returnOpts['__modules__'][modName]['opts'][opt] = list()
-                            for x in str(opts[modName + ":" + opt]).split(","):
+                            returnOpts['__modules__'][modName]['opts'][opt] = []
+                            for x in str(opts[f"{modName}:{opt}"]).split(","):
                                 returnOpts['__modules__'][modName]['opts'][opt].append(int(x))
                         else:
-                            returnOpts['__modules__'][modName]['opts'][opt] = str(opts[modName + ":" + opt]).split(",")
+                            returnOpts['__modules__'][modName]['opts'][opt] = str(
+                                opts[f"{modName}:{opt}"]
+                            ).split(",")
+
 
         return returnOpts
 
@@ -488,7 +478,7 @@ class SpiderFoot:
         Returns:
             list: list of modules
         """
-        modlist = list()
+        modlist = []
 
         if not events:
             return modlist
@@ -507,10 +497,7 @@ class SpiderFoot:
             if "*" in events:
                 modlist.append(mod)
 
-            for evtype in provides:
-                if evtype in events:
-                    modlist.append(mod)
-
+            modlist.extend(mod for evtype in provides if evtype in events)
         return list(set(modlist))
 
     def modulesConsuming(self, events: list) -> list:
@@ -522,7 +509,7 @@ class SpiderFoot:
         Returns:
             list: list of modules
         """
-        modlist = list()
+        modlist = []
 
         if not events:
             return modlist
@@ -542,10 +529,7 @@ class SpiderFoot:
                 modlist.append(mod)
                 continue
 
-            for evtype in consumes:
-                if evtype in events:
-                    modlist.append(mod)
-
+            modlist.extend(mod for evtype in consumes if evtype in events)
         return list(set(modlist))
 
     def eventsFromModules(self, modules: list) -> list:
@@ -557,7 +541,7 @@ class SpiderFoot:
         Returns:
             list: list of types
         """
-        evtlist = list()
+        evtlist = []
 
         if not modules:
             return evtlist
@@ -569,11 +553,8 @@ class SpiderFoot:
 
         for mod in modules:
             if mod in list(loaded_modules.keys()):
-                provides = loaded_modules[mod].get('provides')
-                if provides:
-                    for evt in provides:
-                        evtlist.append(evt)
-
+                if provides := loaded_modules[mod].get('provides'):
+                    evtlist.extend(iter(provides))
         return evtlist
 
     def eventsToModules(self, modules: list) -> list:
@@ -585,7 +566,7 @@ class SpiderFoot:
         Returns:
             list: list of types
         """
-        evtlist = list()
+        evtlist = []
 
         if not modules:
             return evtlist
@@ -597,11 +578,8 @@ class SpiderFoot:
 
         for mod in modules:
             if mod in list(loaded_modules.keys()):
-                consumes = loaded_modules[mod].get('consumes')
-                if consumes:
-                    for evt in consumes:
-                        evtlist.append(evt)
-
+                if consumes := loaded_modules[mod].get('consumes'):
+                    evtlist.extend(iter(consumes))
         return evtlist
 
     def urlRelativeToAbsolute(self, url: str) -> str:
@@ -614,10 +592,10 @@ class SpiderFoot:
             str: URL relative path
         """
         if not url:
-            self.error("Invalid URL: %s" % url)
+            self.error(f"Invalid URL: {url}")
             return None
 
-        finalBits = list()
+        finalBits = []
 
         if '..' not in url:
             return url
@@ -651,22 +629,22 @@ class SpiderFoot:
             str: base directory
         """
         if not url:
-            self.error("Invalid URL: %s" % url)
+            self.error(f"Invalid URL: {url}")
             return None
 
         bits = url.split('/')
 
         # For cases like 'www.somesite.com'
-        if len(bits) == 0:
-            return url + '/'
+        if not bits:
+            return f'{url}/'
 
         # For cases like 'http://www.blah.com'
         if '://' in url and url.count('/') < 3:
-            return url + '/'
+            return f'{url}/'
 
         base = '/'.join(bits[:-1])
 
-        return base + '/'
+        return f'{base}/'
 
     def urlBaseUrl(self, url: str) -> str:
         """Extract the scheme and domain from a URL
@@ -680,7 +658,7 @@ class SpiderFoot:
             str: base URL without trailing slash
         """
         if not url:
-            self.error("Invalid URL: %s" % url)
+            self.error(f"Invalid URL: {url}")
             return None
 
         if '://' in url:
@@ -688,10 +666,7 @@ class SpiderFoot:
         else:
             bits = re.match(r'(.[^/:\?]*)[:/\?]', url)
 
-        if bits is None:
-            return url.lower()
-
-        return bits.group(1).lower()
+        return url.lower() if bits is None else bits[1].lower()
 
     def urlFQDN(self, url: str) -> str:
         """Extract the FQDN from a URL.
@@ -707,11 +682,7 @@ class SpiderFoot:
             return None
 
         baseurl = self.urlBaseUrl(url)
-        if '://' in baseurl:
-            count = 2
-        else:
-            count = 0
-
+        count = 2 if '://' in baseurl else 0
         # http://abc.com will split to ['http:', '', 'abc.com']
         return baseurl.split('/')[count].lower()
 
@@ -735,13 +706,10 @@ class SpiderFoot:
             return None
 
         tld = '.'.join(dom.split('.')[1:])
-        ret = domain.lower().replace('.' + tld, '')
+        ret = domain.lower().replace(f'.{tld}', '')
 
         # If the user supplied a domain with a sub-domain, return the second part
-        if '.' in ret:
-            return ret.split('.')[-1]
-
-        return ret
+        return ret.split('.')[-1] if '.' in ret else ret
 
     def domainKeywords(self, domainList: list, tldList: list) -> set:
         """Extract the keywords (the domains without the TLD or any subdomains) from a list of domains.
@@ -754,15 +722,12 @@ class SpiderFoot:
             set: List of keywords
         """
         if not domainList:
-            self.error("Invalid domain list: %s" % domainList)
+            self.error(f"Invalid domain list: {domainList}")
             return set()
 
-        keywords = list()
-        for domain in domainList:
-            keywords.append(self.domainKeyword(domain, tldList))
-
-        self.debug("Keywords: %s" % keywords)
-        return set([k for k in keywords if k])
+        keywords = [self.domainKeyword(domain, tldList) for domain in domainList]
+        self.debug(f"Keywords: {keywords}")
+        return {k for k in keywords if k}
 
     def hostDomain(self, hostname: str, tldList: list) -> str:
         """Obtain the domain name for a supplied hostname.
@@ -840,9 +805,7 @@ class SpiderFoot:
         Returns:
             bool
         """
-        if not address:
-            return False
-        return netaddr.valid_ipv4(address)
+        return netaddr.valid_ipv4(address) if address else False
 
     def validIP6(self, address: str) -> bool:
         """Check if the provided string is a valid IPv6 address.
@@ -853,9 +816,7 @@ class SpiderFoot:
         Returns:
             bool: string is a valid IPv6 address
         """
-        if not address:
-            return False
-        return netaddr.valid_ipv6(address)
+        return netaddr.valid_ipv6(address) if address else False
 
     def validIpNetwork(self, cidr: str) -> bool:
         """Check if the provided string is a valid CIDR netblock.
@@ -873,7 +834,7 @@ class SpiderFoot:
             return False
 
         try:
-            return bool(netaddr.IPNetwork(str(cidr)).size > 0)
+            return netaddr.IPNetwork(cidr).size > 0
         except BaseException:
             return False
 
@@ -900,9 +861,7 @@ class SpiderFoot:
             return False
         if netaddr.IPAddress(ip).is_multicast():
             return False
-        if netaddr.IPAddress(ip).is_private():
-            return False
-        return True
+        return not netaddr.IPAddress(ip).is_private()
 
     def normalizeDNS(self, res: list) -> list:
         """Clean DNS results to be a simple list
@@ -913,7 +872,7 @@ class SpiderFoot:
         Returns:
             list: list of domains
         """
-        ret = list()
+        ret = []
 
         if not res:
             return ret
@@ -921,13 +880,10 @@ class SpiderFoot:
         for addr in res:
             if isinstance(addr, list):
                 for host in addr:
-                    host = str(host).rstrip(".")
-                    if host:
+                    if host := str(host).rstrip("."):
                         ret.append(host)
-            else:
-                host = str(addr).rstrip(".")
-                if host:
-                    ret.append(host)
+            elif host := str(addr).rstrip("."):
+                ret.append(host)
         return ret
 
     def validEmail(self, email: str) -> bool:
@@ -952,14 +908,7 @@ class SpiderFoot:
             return False
 
         # Skip strings with messed up URL encoding
-        if "%" in email:
-            return False
-
-        # Skip strings which may have been truncated
-        if "..." in email:
-            return False
-
-        return True
+        return False if "%" in email else "..." not in email
 
     def validPhoneNumber(self, phone: str) -> bool:
         """Check if the provided string is a valid phone number.
@@ -984,7 +933,7 @@ class SpiderFoot:
         Returns:
             list: words and names from dictionaries
         """
-        wd = dict()
+        wd = {}
 
         dicts = ["english", "german", "french", "spanish"]
 
@@ -1008,17 +957,16 @@ class SpiderFoot:
         Returns:
             list: list of dictionary file names.
         """
-        wd = dict()
+        wd = {}
 
         dicts = ["names"]
 
         for d in dicts:
             try:
-                wdct = open(f"{self.myPath()}/spiderfoot/dicts/ispell/{d}.dict", 'r')
-                dlines = wdct.readlines()
-                wdct.close()
+                with open(f"{self.myPath()}/spiderfoot/dicts/ispell/{d}.dict", 'r') as wdct:
+                    dlines = wdct.readlines()
             except BaseException as e:
-                self.debug("Could not read dictionary: " + str(e))
+                self.debug(f"Could not read dictionary: {str(e)}")
                 continue
 
             for w in dlines:
@@ -1038,9 +986,9 @@ class SpiderFoot:
         """
         if not host:
             self.error(f"Unable to resolve host: {host} (Invalid host)")
-            return list()
+            return []
 
-        addrs = list()
+        addrs = []
         try:
             addrs = self.normalizeDNS(socket.gethostbyname_ex(host))
         except BaseException as e:
@@ -1067,7 +1015,7 @@ class SpiderFoot:
 
         if not self.validIP(ipaddr) and not self.validIP6(ipaddr):
             self.error(f"Unable to reverse resolve {ipaddr} (Invalid IP address)")
-            return list()
+            return []
 
         self.debug(f"Performing reverse resolve of {ipaddr}")
 
@@ -1075,11 +1023,11 @@ class SpiderFoot:
             addrs = self.normalizeDNS(socket.gethostbyaddr(ipaddr))
         except BaseException as e:
             self.debug(f"Unable to reverse resolve IP address: {ipaddr} ({e})")
-            return list()
+            return []
 
         if not addrs:
             self.debug(f"Unable to reverse resolve IP address: {ipaddr}")
-            return list()
+            return []
 
         self.debug(f"Reverse resolved {ipaddr} to: {addrs}")
 
@@ -1096,9 +1044,9 @@ class SpiderFoot:
         """
         if not hostname:
             self.error(f"Unable to resolve host: {hostname} (Invalid host)")
-            return list()
+            return []
 
-        addrs = list()
+        addrs = []
         try:
             res = socket.getaddrinfo(hostname, None, socket.AF_INET6)
             for addr in res:
@@ -1138,14 +1086,7 @@ class SpiderFoot:
             self.error(f"Unable to verify hostname {host} resolves to {ip} (Invalid IP address)")
             return False
 
-        if not addrs:
-            return False
-
-        for addr in addrs:
-            if str(addr) == ip:
-                return True
-
-        return False
+        return any(str(addr) == ip for addr in addrs) if addrs else False
 
     def safeSocket(self, host: str, port: int, timeout: int) -> 'ssl.SSLSocket':
         """Create a safe socket that's using SOCKS/TOR if it was enabled.
@@ -1158,8 +1099,8 @@ class SpiderFoot:
         Returns:
             sock
         """
-        sock = socket.create_connection((host, int(port)), int(timeout))
-        sock.settimeout(int(timeout))
+        sock = socket.create_connection((host, port), timeout)
+        sock.settimeout(timeout)
         return sock
 
     def safeSSLSocket(self, host: str, port: int, timeout: int) -> 'ssl.SSLSocket':
@@ -1174,8 +1115,8 @@ class SpiderFoot:
             sock
         """
         s = socket.socket()
-        s.settimeout(int(timeout))
-        s.connect((host, int(port)))
+        s.settimeout(timeout)
+        s.connect((host, port))
         sock = ssl.wrap_socket(s)
         sock.do_handshake()
         return sock
@@ -1194,17 +1135,16 @@ class SpiderFoot:
 
             fix whitespace parsing; ie, " " is not a valid disallowed path
         """
-        returnArr = list()
+        returnArr = []
 
         if not isinstance(robotsTxtData, str):
             return returnArr
 
         for line in robotsTxtData.splitlines():
             if line.lower().startswith('disallow:'):
-                m = re.match(r'disallow:\s*(.[^ #]*)', line, re.IGNORECASE)
-                if m:
-                    self.debug('robots.txt parsing found disallow: ' + m.group(1))
-                    returnArr.append(m.group(1))
+                if m := re.match(r'disallow:\s*(.[^ #]*)', line, re.IGNORECASE):
+                    self.debug('robots.txt parsing found disallow: ' + m[1])
+                    returnArr.append(m[1])
 
         return returnArr
 
@@ -1217,7 +1157,7 @@ class SpiderFoot:
         Returns:
             list: list of hashes
         """
-        ret = list()
+        ret = []
 
         if not isinstance(data, str):
             return ret
@@ -1232,7 +1172,7 @@ class SpiderFoot:
         for h in hashes:
             matches = re.findall(hashes[h], data)
             for match in matches:
-                self.debug("Found hash: " + match)
+                self.debug(f"Found hash: {match}")
                 ret.append((h, match))
 
         return ret
@@ -1247,15 +1187,11 @@ class SpiderFoot:
             list: list of email addresses
         """
         if not isinstance(data, str):
-            return list()
+            return []
 
-        emails = set()
         matches = re.findall(r'([\%a-zA-Z\.0-9_\-\+]+@[a-zA-Z\.0-9\-]+\.[a-zA-Z\.0-9\-]+)', data)
 
-        for match in matches:
-            if self.validEmail(match):
-                emails.add(match)
-
+        emails = {match for match in matches if self.validEmail(match)}
         return list(emails)
 
     def parseCreditCards(self, data: str) -> list:
@@ -1273,7 +1209,7 @@ class SpiderFoot:
             list: list of credit card numbers
         """
         if not isinstance(data, str):
-            return list()
+            return []
 
         creditCards = set()
 
@@ -1299,12 +1235,12 @@ class SpiderFoot:
                 d = int(digit)
                 if isSecondDigit:
                     d *= 2
-                ccNumberTotal += int(d / 10)
+                ccNumberTotal += d // 10
                 ccNumberTotal += d % 10
 
                 isSecondDigit = not isSecondDigit
             if ccNumberTotal % 10 == 0:
-                self.debug("Found credit card number: " + match)
+                self.debug(f"Found credit card number: {match}")
                 creditCards.add(match)
         return list(creditCards)
 
@@ -1584,10 +1520,11 @@ class SpiderFoot:
         Returns:
             str: country name
         """
-        if not isinstance(countryCode, str):
-            return None
-
-        return self.getCountryCodeDict().get(countryCode.upper())
+        return (
+            self.getCountryCodeDict().get(countryCode.upper())
+            if isinstance(countryCode, str)
+            else None
+        )
 
     def countryNameFromTld(self, tld: str) -> str:
         """Retrieve the country name associated with a TLD.
@@ -1601,9 +1538,7 @@ class SpiderFoot:
         if not isinstance(tld, str):
             return None
 
-        country_name = self.getCountryCodeDict().get(tld.upper())
-
-        if country_name:
+        if country_name := self.getCountryCodeDict().get(tld.upper()):
             return country_name
 
         country_tlds = {
@@ -1615,9 +1550,7 @@ class SpiderFoot:
             "MIL": "United States"
         }
 
-        country_name = country_tlds.get(tld.upper())
-
-        if country_name:
+        if country_name := country_tlds.get(tld.upper()):
             return country_name
 
         return None
@@ -1637,7 +1570,7 @@ class SpiderFoot:
             list: list of IBAN
         """
         if not isinstance(data, str):
-            return list()
+            return []
 
         ibans = set()
 
@@ -1679,7 +1612,7 @@ class SpiderFoot:
         for match in matches:
             iban = match.upper()
 
-            countryCode = iban[0:2]
+            countryCode = iban[:2]
 
             if countryCode not in ibanCountryLengths.keys():
                 continue
@@ -1690,7 +1623,7 @@ class SpiderFoot:
             # Convert IBAN to integer format.
             # Move the first 4 characters to the end of the string,
             # then convert all characters to integers; where A = 10, B = 11, ...., Z = 35
-            iban_int = iban[4:] + iban[0:4]
+            iban_int = iban[4:] + iban[:4]
             for character in iban_int:
                 if character.isalpha():
                     iban_int = iban_int.replace(character, str((ord(character) - 65) + 10))
@@ -1699,7 +1632,7 @@ class SpiderFoot:
             if int(iban_int) % 97 != 1:
                 continue
 
-            self.debug("Found IBAN: %s" % iban)
+            self.debug(f"Found IBAN: {iban}")
             ibans.add(iban)
 
         return list(ibans)
@@ -1718,7 +1651,7 @@ class SpiderFoot:
         """
 
         if not isinstance(der_cert, bytes):
-            raise TypeError("der_cert is %s; expected bytes()" % type(der_cert))
+            raise TypeError(f"der_cert is {type(der_cert)}; expected bytes()")
 
         return ssl.DER_cert_to_PEM_cert(der_cert)
 
@@ -1737,7 +1670,6 @@ class SpiderFoot:
             self.error(f"Invalid certificate: {rawcert}")
             return None
 
-        ret = dict()
         if '\r' in rawcert:
             rawcert = rawcert.replace('\r', '')
         if isinstance(rawcert, str):
@@ -1748,9 +1680,9 @@ class SpiderFoot:
         sslcert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, rawcert)
         sslcert_dump = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_TEXT, sslcert)
 
-        ret['text'] = sslcert_dump.decode('utf-8', errors='replace')
+        ret = {'text': sslcert_dump.decode('utf-8', errors='replace')}
         ret['issuer'] = str(cert.issuer)
-        ret['altnames'] = list()
+        ret['altnames'] = []
         ret['expired'] = False
         ret['expiring'] = False
         ret['mismatch'] = False
@@ -1780,10 +1712,8 @@ class SpiderFoot:
                 if isinstance(x, cryptography.x509.DNSName):
                     ret['altnames'].append(x.value.lower().encode('raw_unicode_escape').decode("ascii", errors='replace'))
         except BaseException as e:
-            self.debug("Problem processing certificate: " + str(e))
-            pass
-
-        certhosts = list()
+            self.debug(f"Problem processing certificate: {str(e)}")
+        certhosts = []
         try:
             attrs = cert.subject.get_attributes_for_oid(cryptography.x509.oid.NameOID.COMMON_NAME)
 
@@ -1793,32 +1723,28 @@ class SpiderFoot:
                 if name not in ret['altnames']:
                     certhosts.append(name)
         except BaseException as e:
-            self.debug("Problem processing certificate: " + str(e))
-            pass
-
+            self.debug(f"Problem processing certificate: {str(e)}")
         # Check for mismatch
         if fqdn and ret['issued']:
             fqdn = fqdn.lower()
 
             try:
                 # Extract the CN from the issued section
-                if "cn=" + fqdn in ret['issued'].lower():
+                if f"cn={fqdn}" in ret['issued'].lower():
                     certhosts.append(fqdn)
 
                 # Extract subject alternative names
-                for host in ret['altnames']:
-                    certhosts.append(host.replace("dns:", ""))
-
+                certhosts.extend(host.replace("dns:", "") for host in ret['altnames'])
                 ret['hosts'] = certhosts
 
-                self.debug("Checking for " + fqdn + " in certificate subject")
+                self.debug(f"Checking for {fqdn} in certificate subject")
                 fqdn_tld = ".".join(fqdn.split(".")[1:]).lower()
 
                 found = False
                 for chost in certhosts:
                     if chost == fqdn:
                         found = True
-                    if chost == "*." + fqdn_tld:
+                    if chost == f"*.{fqdn_tld}":
                         found = True
                     if chost == fqdn_tld:
                         found = True
@@ -1826,7 +1752,7 @@ class SpiderFoot:
                 if not found:
                     ret['mismatch'] = True
             except BaseException as e:
-                self.error("Error processing certificate: " + str(e))
+                self.error(f"Error processing certificate: {str(e)}")
                 ret['certerror'] = True
 
         return ret

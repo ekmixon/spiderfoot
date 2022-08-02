@@ -163,9 +163,9 @@ class sfp_crobat_api(SpiderFootPlugin):
                 if self.opts['verify'] and not self.sf.resolveHost(domain) and not self.sf.resolveHost6(domain):
                     self.debug(f"Host {domain} could not be resolved")
                     evt = SpiderFootEvent("INTERNET_NAME_UNRESOLVED", domain, self.__name__, event)
-                    self.notifyListeners(evt)
                 else:
                     evt = SpiderFootEvent("INTERNET_NAME", domain, self.__name__, event)
-                    self.notifyListeners(evt)
+
+                self.notifyListeners(evt)
 
 # End of sfp_crobat_api class

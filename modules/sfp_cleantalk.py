@@ -96,8 +96,11 @@ class sfp_cleantalk(SpiderFootPlugin):
         cid = "_cleantalk"
         url = "https://iplists.firehol.org/files/cleantalk_7d.ipset"
 
-        data = dict()
-        data["content"] = self.sf.cacheGet("sfmal_" + cid, self.opts.get('cacheperiod', 0))
+        data = {
+            "content": self.sf.cacheGet(
+                f"sfmal_{cid}", self.opts.get('cacheperiod', 0)
+            )
+        }
 
         if data["content"] is None:
             data = self.sf.fetchUrl(url, timeout=self.opts['_fetchtimeout'], useragent=self.opts['_useragent'])
@@ -112,7 +115,7 @@ class sfp_cleantalk(SpiderFootPlugin):
                 self.errorState = True
                 return None
 
-            self.sf.cachePut("sfmal_" + cid, data['content'])
+            self.sf.cachePut(f"sfmal_{cid}", data['content'])
 
         for line in data["content"].split('\n'):
             ip = line.strip().lower()
@@ -129,10 +132,9 @@ class sfp_cleantalk(SpiderFootPlugin):
                     self.debug(f"Error encountered parsing: {e}")
                     continue
 
-            if targetType == "ip":
-                if qry.lower() == ip:
-                    self.debug(f"{qry} found in CleanTalk Spam List.")
-                    return url
+            if targetType == "ip" and qry.lower() == ip:
+                self.debug(f"{qry} found in CleanTalk Spam List.")
+                return url
 
         return None
 

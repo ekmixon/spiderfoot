@@ -80,10 +80,11 @@ class sfp_countryname(SpiderFootPlugin):
             self.debug(f"Lookup of region code failed for phone number: {srcPhoneNumber}")
             return None
 
-        if not countryCode:
-            return None
-
-        return self.sf.countryNameFromCountryCode(countryCode.upper())
+        return (
+            self.sf.countryNameFromCountryCode(countryCode.upper())
+            if countryCode
+            else None
+        )
 
     def detectCountryFromDomainName(self, srcDomain):
         """Lookup name of country from TLD of domain name.
@@ -103,8 +104,7 @@ class sfp_countryname(SpiderFootPlugin):
 
         # Search for country TLD in the domain parts - reversed
         for part in domainParts[::-1]:
-            country_name = self.sf.countryNameFromTld(part)
-            if country_name:
+            if country_name := self.sf.countryNameFromTld(part):
                 return country_name
 
         return None
@@ -118,10 +118,11 @@ class sfp_countryname(SpiderFootPlugin):
         Returns:
             str: country name
         """
-        if not isinstance(srcIBAN, str):
-            return None
-
-        return self.sf.countryNameFromCountryCode(srcIBAN[0:2])
+        return (
+            self.sf.countryNameFromCountryCode(srcIBAN[:2])
+            if isinstance(srcIBAN, str)
+            else None
+        )
 
     def detectCountryFromData(self, srcData):
         """Detect name of country from event data (WHOIS lookup, Geo Info, Physical Address, etc)
@@ -132,7 +133,7 @@ class sfp_countryname(SpiderFootPlugin):
         Returns:
             list: list of countries
         """
-        countries = list()
+        countries = []
 
         if not srcData:
             return countries
@@ -145,17 +146,16 @@ class sfp_countryname(SpiderFootPlugin):
             if countryName.lower() not in srcData.lower():
                 continue
 
-            # Look for country name in source data
-            # Spaces are not included since "New Jersey" and others
-            # will get interpreted as "Jersey", etc.
-            matchCountries = re.findall(r"[,'\"\:\=\[\(\[\n\t\r\.] ?" + countryName + r"[,'\"\:\=\[\(\[\n\t\r\.]", srcData, re.IGNORECASE)
-
-            if matchCountries:
+            if matchCountries := re.findall(
+                r"[,'\"\:\=\[\(\[\n\t\r\.] ?"
+                + countryName
+                + r"[,'\"\:\=\[\(\[\n\t\r\.]",
+                srcData,
+                re.IGNORECASE,
+            ):
                 countries.append(countryName)
 
-        # Look for "Country: ", usually found in Whois records
-        matchCountries = re.findall("country: (.+?)", srcData, re.IGNORECASE)
-        if matchCountries:
+        if matchCountries := re.findall("country: (.+?)", srcData, re.IGNORECASE):
             for m in matchCountries:
                 m = m.strip()
                 if m in abbvCountryCodes:
@@ -182,11 +182,7 @@ class sfp_countryname(SpiderFootPlugin):
         srcModuleName = event.module
         eventData = event.data
 
-        if event.moduleDataSource:
-            moduleDataSource = event.moduleDataSource
-        else:
-            moduleDataSource = "Unknown"
-
+        moduleDataSource = event.moduleDataSource or "Unknown"
         self.debug(f"Received event, {eventName}, from {srcModuleName}")
 
         eventDataHash = self.sf.hashstring(eventData)
@@ -197,7 +193,7 @@ class sfp_countryname(SpiderFootPlugin):
 
         self.results[eventDataHash] = True
 
-        countryNames = list()
+        countryNames = []
 
         # Process the event data based on incoming event type
         if eventName == "PHONE_NUMBER":

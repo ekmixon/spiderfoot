@@ -179,8 +179,7 @@ class sfp_censys(SpiderFootPlugin):
             self.error(f"Error processing JSON response from Censys.io: {e}")
             return None
 
-        error_type = data.get('error_type')
-        if error_type:
+        if error_type := data.get('error_type'):
             self.error(f"Censys returned an unexpected error: {error_type}")
             return None
 
@@ -216,7 +215,7 @@ class sfp_censys(SpiderFootPlugin):
                 self.debug(f"Network size bigger than permitted: {IPNetwork(eventData).prefixlen} > {max_netblock}")
                 return
 
-        qrylist = list()
+        qrylist = []
         if eventName.startswith("NETBLOCK_"):
             for ipaddr in IPNetwork(eventData):
                 qrylist.append(str(ipaddr))
@@ -265,31 +264,28 @@ class sfp_censys(SpiderFootPlugin):
                 self.error(f"Error encountered processing last_updated_at record for {eventData} ({e})")
 
             try:
-                location = rec.get('location')
-                if location:
-                    geoinfo = ', '.join(
+                if location := rec.get('location'):
+                    if geoinfo := ', '.join(
                         [
-                            _f for _f in [
+                            _f
+                            for _f in [
                                 location.get('city'),
                                 location.get('province'),
                                 location.get('postal_code'),
                                 location.get('country'),
-                            ] if _f
+                            ]
+                            if _f
                         ]
-                    )
-                    if geoinfo:
+                    ):
                         e = SpiderFootEvent("GEOINFO", geoinfo, self.__name__, pevent)
                         self.notifyListeners(e)
             except Exception as e:
                 self.error(f"Error encountered processing location record for {eventData} ({e})")
 
             try:
-                services = rec.get('services')
-                if services:
+                if services := rec.get('services'):
                     for service in services:
-                        port = service.get('port')
-
-                        if port:
+                        if port := service.get('port'):
                             evt = SpiderFootEvent("TCP_PORT_OPEN", f"{addr}:{port}", self.__name__, pevent)
                             self.notifyListeners(evt)
 
@@ -307,28 +303,22 @@ class sfp_censys(SpiderFootPlugin):
                 self.error(f"Error encountered processing services record for {eventData} ({e})")
 
             try:
-                autonomous_system = rec.get('autonomous_system')
-                if autonomous_system:
-                    asn = autonomous_system.get('asn')
-                    if asn:
+                if autonomous_system := rec.get('autonomous_system'):
+                    if asn := autonomous_system.get('asn'):
                         e = SpiderFootEvent("BGP_AS_MEMBER", str(asn), self.__name__, pevent)
                         self.notifyListeners(e)
 
-                    bgp_prefix = autonomous_system.get('bgp_prefix')
-                    if bgp_prefix:
+                    if bgp_prefix := autonomous_system.get('bgp_prefix'):
                         e = SpiderFootEvent("NETBLOCK_MEMBER", str(bgp_prefix), self.__name__, pevent)
                         self.notifyListeners(e)
             except Exception as e:
                 self.error(f"Error encountered processing autonomous_system record for {eventData} ({e})")
 
             try:
-                operating_system = rec.get('operating_system')
-                if operating_system:
+                if operating_system := rec.get('operating_system'):
                     vendor = operating_system.get('vendor')
                     product = operating_system.get('product')
-                    os = ' '.join(filter(None, [vendor, product]))
-
-                    if os:
+                    if os := ' '.join(filter(None, [vendor, product])):
                         e = SpiderFootEvent("OPERATING_SYSTEM", os, self.__name__, pevent)
                         self.notifyListeners(e)
             except Exception as e:

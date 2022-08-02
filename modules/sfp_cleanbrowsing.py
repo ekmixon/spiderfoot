@@ -91,9 +91,7 @@ class sfp_cleanbrowsing(SpiderFootPlugin):
             self.debug(f"Unable to resolve {qaddr}")
             return False
 
-        if addrs:
-            return True
-        return False
+        return bool(addrs)
 
     def queryAdultDNS(self, qaddr):
         res = dns.resolver.Resolver()
@@ -106,9 +104,7 @@ class sfp_cleanbrowsing(SpiderFootPlugin):
             self.debug(f"Unable to resolve {qaddr}")
             return False
 
-        if addrs:
-            return True
-        return False
+        return bool(addrs)
 
     def querySecurityDNS(self, qaddr):
         res = dns.resolver.Resolver()
@@ -121,9 +117,7 @@ class sfp_cleanbrowsing(SpiderFootPlugin):
             self.debug(f"Unable to resolve {qaddr}")
             return False
 
-        if addrs:
-            return True
-        return False
+        return bool(addrs)
 
     def handleEvent(self, event):
         eventName = event.eventType
